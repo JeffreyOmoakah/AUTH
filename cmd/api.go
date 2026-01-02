@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	repo "github.com/JeffreyOmoakah/AUTH.git/internal/adapters/postgresql/sqlc"
+	"github.com/JeffreyOmoakah/AUTH.git/internal/users"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/jackc/pgx/v5"
@@ -28,6 +30,9 @@ func (app *application) mount() http.Handler{
 			w.Write([]byte("all good"))
 		})
 		
+		signupService := users.NewService(repo.New(app.db), app.db)
+		signupHandler := users.NewHandler(signupService)
+		r.Post("/Signup", signupHandler.Signup)
 		return r
 }
 
