@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -30,9 +31,16 @@ func (app *application) mount() http.Handler{
 			w.Write([]byte("all good"))
 		})
 		
-		signupService := users.NewService(repo.New(app.db), app.db)
-		signupHandler := users.NewHandler(signupService)
-		r.Post("/Signup", signupHandler.Signup)
+		// Inside your routes() function or main()
+		userRepo := repo.New(app.db)
+		userService := users.NewService(userRepo, app.db, app.logger)
+
+		// FIX: Pass the logger (app.logger) as the second argument
+		userHandler := users.NewHandler(userService, app.logger) 
+
+		r.Post("/Signup", userHandler.Signup)
+		r.Post("/Login", userHandler.Login)
+		
 		return r
 }
 
@@ -54,6 +62,7 @@ func (app *application) run(h http.Handler) error{
 type application struct {
 	config config // Application manager
 	db *pgx.Conn
+	logger *slog.Logger
 }
 
 type config struct {
