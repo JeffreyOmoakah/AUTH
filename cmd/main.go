@@ -37,6 +37,7 @@ func main() {
 		api := application{
 			config: cfg,
 			db: conn,
+			logger: logger,
 		}
 		
 		api.run(api.mount())
