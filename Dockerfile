@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the binary. 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /auth-api ./cmd/api.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /auth-api ./cmd/
 
 # Stage 2: Runtime
 FROM alpine:3.20
@@ -27,7 +27,6 @@ WORKDIR /app
 
 # Copy binary and migrations (needed if running migrations at startup)
 COPY --from=builder /auth-api .
-COPY --from=builder /app/internal/adapters/postgresql/migrations ./migrations
 
 # Railway provides the PORT environment variable
 EXPOSE 8080
