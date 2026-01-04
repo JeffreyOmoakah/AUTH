@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the binary. 
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /auth-api ./cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /auth-api ./cmd/api
 
 # Stage 2: Runtime
 FROM alpine:3.20
