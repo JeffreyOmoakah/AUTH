@@ -34,14 +34,16 @@ func (app *application) mount() http.Handler{
 		// Inside your routes() function or main()
 		userRepo := repo.New(app.db)
 		userService := users.NewService(userRepo, app.db, app.logger)
-
-		// FIX: Pass the logger (app.logger) as the second argument
 		userHandler := users.NewHandler(userService, app.logger) 
 
-		r.Post("/Signup", userHandler.Signup)
-		r.Post("/Login", userHandler.Login)
-		
-		return r
+		r.Route("/v1", func(r chi.Router) {
+				r.Route("/auth", func(r chi.Router) {
+					r.Post("/signup", userHandler.Signup) 
+					r.Post("/login", userHandler.Login)
+				})
+			})
+
+			return r
 }
 
 func (app *application) run(h http.Handler) error{
