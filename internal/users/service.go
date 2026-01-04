@@ -9,7 +9,7 @@ import (
 
 	repo "github.com/JeffreyOmoakah/AUTH.git/internal/adapters/postgresql/sqlc"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,7 +19,7 @@ var (
 
 type svc struct {
 	repo *repo.Queries
-	db   *pgx.Conn
+	db   *pgxpool.Pool
 	logger *slog.Logger
 }
 
@@ -29,7 +29,7 @@ type Service interface {
 	GenerateToken(user repo.User) (string, error)
 }
 
-func NewService(repo *repo.Queries, db *pgx.Conn, logger *slog.Logger) Service {
+func NewService(repo *repo.Queries, db *pgxpool.Pool, logger *slog.Logger) Service {
 	return &svc{
 		repo: repo,
 		db:   db,
