@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"log"
 	"log/slog"
 	"os"
 
 	"github.com/JeffreyOmoakah/AUTH.git/internal/env"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pressly/goose/v3"
 )
 
 
@@ -22,6 +25,18 @@ func main() {
 				dsn: env.GetString("DATABASE_URL", ""), 
 			},
 		}
+	
+	// Run migrations
+	sqlDB, err := sql.Open("pgx", cfg.db.dsn)
+	if err != nil {
+		log.Fatalf("Failed to open DB for migrations: %v", err)
+	}
+	
+	if err := goose.Up(sqlDB, "./internal/adapters/postgresql/migrations"); err != nil {
+		log.Fatalf("Migration failed: %v", err)
+	}
+	sqlDB.Close()
+	log.Println("Migrations completed successfully")
 	
 	// Logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
