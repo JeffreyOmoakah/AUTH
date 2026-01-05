@@ -33,7 +33,7 @@ func main() {
 	logger.Info("starting migrations...")
 	
 	// Run migrations with sql.DB
-	sqlDB, err := sql.Open("pgx", cfg.db.dsn)
+	sqlDB, err := sql.Open("postgres", cfg.db.dsn)
 	if err != nil {
 		logger.Error("failed to open DB for migrations", "error", err)
 		os.Exit(1)
