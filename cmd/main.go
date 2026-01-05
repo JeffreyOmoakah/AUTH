@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
-	"log"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/JeffreyOmoakah/AUTH.git/internal/env"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,48 +19,64 @@ func main() {
 	defer cancel()
 	
 	port := env.GetString("PORT", "3000")
-		cfg := config{
-			addr: ":" + port,
-			db: dbConfig{
-				dsn: env.GetString("DATABASE_URL", ""), 
-			},
-		}
+	cfg := config{
+		addr: ":" + port,
+		db: dbConfig{
+			dsn: env.GetString("DATABASE_URL", ""), 
+		},
+	}
 	
-	// Run migrations
+	// Logger first
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+	
+	logger.Info("starting migrations...")
+	
+	// Run migrations with sql.DB
 	sqlDB, err := sql.Open("pgx", cfg.db.dsn)
 	if err != nil {
-		log.Fatalf("Failed to open DB for migrations: %v", err)
+		logger.Error("failed to open DB for migrations", "error", err)
+		os.Exit(1)
 	}
+	
+	// Test connection with timeout
+	ctx2, cancel2 := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel2()
+	if err := sqlDB.PingContext(ctx2); err != nil {
+		logger.Error("failed to ping database", "error", err)
+		os.Exit(1)
+	}
+	logger.Info("database connection successful")
+	
+	// Set provider for PostgreSQL
+	goose.SetDialect("postgres")
 	
 	if err := goose.Up(sqlDB, "./internal/adapters/postgresql/migrations"); err != nil {
-		log.Fatalf("Migration failed: %v", err)
+		logger.Error("migration failed", "error", err)
+		sqlDB.Close()
+		os.Exit(1)
 	}
 	sqlDB.Close()
-	log.Println("Migrations completed successfully")
+	logger.Info("migrations completed successfully")
 	
-	// Logger
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-		slog.SetDefault(logger)
+	// Now connect with pgxpool
+	pool, err := pgxpool.New(ctx, cfg.db.dsn)
+	if err != nil {
+		logger.Error("unable to connect to database pool", "error", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+	logger.Info("database connection pool established")
 	
-		pool, err := pgxpool.New(ctx, cfg.db.dsn)
-			if err != nil {
-				logger.Error("unable to connect to database pool", "error", err)
-				os.Exit(1)
-			}
-			defer pool.Close()
-
-			logger.Info("database connection pool established")
-
-			api := application{
-				config: cfg,
-				db:     pool,
-				logger: logger,
-			}
-
-			// 4. Proper blocking start
-			logger.Info("server starting", "addr", cfg.addr)
-			if err := api.run(api.mount()); err != nil {
-				logger.Error("server crashed", "error", err)
-				os.Exit(1)
-			}
+	api := application{
+		config: cfg,
+		db:     pool,
+		logger: logger,
+	}
+	
+	logger.Info("server starting", "addr", cfg.addr)
+	if err := api.run(api.mount()); err != nil {
+		logger.Error("server crashed", "error", err)
+		os.Exit(1)
+	}
 }
