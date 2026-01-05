@@ -24,7 +24,7 @@ COPY --from=builder /auth-api ./auth-api
 COPY --from=builder /go/bin/goose /usr/local/bin/goose
 
 # 3. Copy migrations to a predictable flat path
-COPY --from=builder /app/internal/adapters/postgresql/migrations ./migrations
+COPY --from=builder /app/internal/adapters/postgresql/migrations ./internal/adapters/postgresql/migrations
 
 # Permissions
 RUN chmod +x ./auth-api /usr/local/bin/goose
