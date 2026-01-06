@@ -10,7 +10,7 @@ RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 
 COPY . .
 # Build the binary from the cmd folder (containing main.go and api.go)
-RUN CGO_ENABLED=0 GOOS=linux go build -o /auth-api ./cmd
+RUN CGO_ENABLED=0 GOOS=linux go build -o /auth-api ./cmd/api
 
 # Stage 2: Runtime
 FROM alpine:3.20
